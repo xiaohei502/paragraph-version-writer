@@ -1,0 +1,809 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>段落版本写作器</title>
+  <style>
+    :root{
+      --bg:#fbfaf6; --panel:#fff; --line:#e9e1d7; --text:#25211d; --muted:#746c62;
+      --blue:#2f6fce; --blue2:#edf5ff; --green:#27845f; --green2:#ecf8f1;
+      --orange:#b76619; --orange2:#fff3e3; --red:#d34b4b; --red2:#fff0ef;
+      --shadow:0 12px 30px rgba(42,32,18,.06);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; overflow:hidden;
+      background:linear-gradient(180deg,#fffdf9 0%,#f8f4ec 100%);
+      color:var(--text);
+      font-family:ui-serif,"Noto Serif SC","Songti SC","STSong","SimSun",serif;
+    }
+    button,input,textarea,select{font:inherit}
+    button{
+      border:1px solid var(--line); background:var(--panel); border-radius:11px; padding:9px 12px;
+      color:#38322d; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
+      gap:6px; white-space:nowrap; transition:.16s ease;
+    }
+    button:hover{border-color:#bdd2f2; box-shadow:0 6px 16px rgba(47,111,206,.08)}
+    button.primary{background:var(--blue); color:white; border-color:var(--blue)}
+    button.green{color:var(--green); border-color:#b8e2ca; background:#f7fffa}
+    button.danger{color:var(--red); border-color:#f0c7c7; background:#fffafa}
+    button.small{padding:6px 8px;font-size:12px;border-radius:9px}
+    input,textarea,select{
+      border:1px solid var(--line); background:#fff; border-radius:11px; outline:none;
+      padding:10px 12px; color:var(--text);
+    }
+    input:focus,textarea:focus,select:focus{border-color:#95b8ef; box-shadow:0 0 0 3px rgba(47,111,206,.09)}
+    textarea{resize:none; line-height:1.85}
+    .app{height:100vh; display:grid; grid-template-columns:250px 1fr 390px}
+    .sidebar{
+      border-right:1px solid var(--line); background:rgba(255,255,255,.66);
+      padding:28px 20px; display:flex; flex-direction:column; min-width:0;
+    }
+    .brand h1{margin:0;font-size:28px;color:#133461;letter-spacing:.08em;font-weight:800}
+    .brand p{margin:8px 0 0;color:var(--muted);font-size:14px}
+    .bamboo{
+      height:70px;margin:12px 0 20px;opacity:.42;border-radius:12px;
+      background:linear-gradient(115deg,transparent 45%,#8ba4b7 46% 47%,transparent 48%),
+        radial-gradient(ellipse at 18% 86%,#d5dde3 0 20%,transparent 21%),
+        radial-gradient(ellipse at 55% 78%,#c7d3dc 0 25%,transparent 26%);
+    }
+    .nav{display:grid;gap:8px;margin-bottom:24px}
+    .navItem{
+      display:flex;align-items:center;gap:12px;border-radius:12px;padding:12px 13px;
+      color:var(--blue);font-size:15px;border:1px solid #dceaff;
+      background:linear-gradient(90deg,#eaf3ff,#f7fbff);font-weight:700;
+    }
+    .chaptersTitle{display:flex;justify-content:space-between;align-items:center;margin:12px 0 10px;color:#4b423a;font-weight:700}
+    .chapterList{display:grid;gap:10px;overflow:auto;min-height:0;padding-right:2px;flex:1}
+    .chapterCard{
+      border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.74);
+      padding:12px;cursor:pointer;box-shadow:0 8px 18px rgba(42,32,18,.045);
+    }
+    .chapterCard.active{border-color:#8db4ef;background:#f4f9ff;box-shadow:0 0 0 3px rgba(47,111,206,.07)}
+    .chapterName{color:#24466f;font-weight:700;margin-bottom:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .chapterMeta{color:var(--muted);font-size:13px}
+    .inkscape{
+      margin-top:16px;height:135px;border:1px solid var(--line);border-radius:16px;overflow:hidden;
+      background:linear-gradient(180deg,#fff,#f2eee6);position:relative;
+    }
+    .inkscape:before{
+      content:"";position:absolute;inset:0;
+      background:radial-gradient(ellipse at 25% 80%, rgba(112,137,154,.24) 0 18%, transparent 19%),
+        radial-gradient(ellipse at 47% 78%, rgba(112,137,154,.2) 0 23%, transparent 24%),
+        radial-gradient(ellipse at 75% 76%, rgba(112,137,154,.2) 0 24%, transparent 25%);
+    }
+    .main{height:100vh;padding:28px 28px 20px;display:flex;flex-direction:column;min-width:0}
+    .top{display:grid;grid-template-columns:1fr auto;gap:18px;margin-bottom:14px;align-items:start}
+    .compactTop{display:flex;justify-content:flex-end;margin-bottom:10px}
+    .title h2{margin:0;font-size:30px;color:#153867;letter-spacing:.08em}
+    .title p{margin:9px 0 0;color:var(--muted);font-size:15px;line-height:1.7}
+    .search{
+      width:340px;border:1px solid var(--line);background:#fff;border-radius:12px;
+      display:flex;align-items:center;padding:9px 12px;gap:8px;color:var(--muted);
+    }
+    .search input{border:0;padding:0;box-shadow:none;width:100%;background:transparent;font-family:ui-sans-serif,system-ui}
+    .shortcut{font-size:12px;border:1px solid var(--line);border-radius:8px;padding:2px 6px;background:#faf9f6;color:#9a9188}
+    .toolbar{
+      display:flex;gap:9px;align-items:center;flex-wrap:wrap;
+      padding:10px 0 12px; margin-bottom:8px;
+      border-bottom:1px solid rgba(233,225,215,.72);
+    }
+    .statRow{display:flex;gap:12px;margin:0 0 12px;flex-wrap:wrap}
+    .pill{border-radius:999px;padding:7px 16px;border:1px solid #dbe8ff;color:var(--blue);background:#f1f7ff;font-weight:700}
+    .pill.green{border-color:#d6eddf;color:var(--green);background:var(--green2)}
+    .pill.orange{border-color:#f1ddbf;color:var(--orange);background:var(--orange2)}
+    .editorWrap{flex:1;min-height:0;overflow:auto;padding:0 6px 6px 0}
+    .paragraph{display:grid;grid-template-columns:46px 1fr;margin-bottom:14px}
+    .paraRail{display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:26px}
+    .handle{color:#8f877f;font-family:ui-sans-serif,system-ui;letter-spacing:1px;line-height:.8;cursor:grab}
+    .paraCard{
+      background:rgba(255,255,255,.86);border:1px solid var(--line);border-radius:16px;
+      box-shadow:0 8px 18px rgba(42,32,18,.045);padding:18px 20px;transition:.15s ease;
+    }
+    .paragraph.active .paraCard{border-color:var(--blue);box-shadow:0 0 0 3px rgba(47,111,206,.09),0 8px 18px rgba(42,32,18,.045)}
+    .paraHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+    .paraTitle{display:flex;align-items:center;gap:8px;color:#2b2926;font-size:18px;font-weight:700}
+    .tag{border-radius:8px;padding:3px 8px;font-size:12px;color:var(--blue);background:var(--blue2);border:1px solid #d7e8ff;font-weight:600}
+    .paraTools{display:flex;align-items:center;gap:8px}
+    .paraText{
+      width:100%;border:0;box-shadow:none;background:transparent;padding:0;
+      min-height:100px;font-size:16px;line-height:1.95;color:#312c27;
+      font-family:ui-serif,"Noto Serif SC","Songti SC","STSong","SimSun",serif;
+    }
+    .addParaCard{
+      margin:6px 0 20px 46px;border:1px dashed #cfc4b7;background:rgba(255,255,255,.5);
+      border-radius:16px;padding:18px;display:flex;justify-content:center;color:var(--muted);
+    }
+    .right{
+      height:100vh;padding:28px 20px 20px;border-left:1px solid var(--line);
+      background:rgba(255,255,255,.6);display:flex;flex-direction:column;min-width:0;
+    }
+    .right h3{margin:0 0 4px;font-size:19px;color:#26344b}
+    .rightSub{color:var(--muted);font-size:13px;margin-bottom:16px}
+    .versions{display:grid;gap:10px;margin-bottom:16px;max-height:300px;overflow:auto;padding-right:2px}
+    .version{background:#fff;border:1px solid var(--line);border-radius:13px;padding:12px 14px;cursor:pointer;display:grid;gap:8px}
+    .version.active{border-color:var(--blue);background:#f8fbff;box-shadow:0 0 0 3px rgba(47,111,206,.07)}
+    .versionTop{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .vName{font-weight:700;color:#312a25}
+    .vMeta{display:flex;gap:12px;color:var(--muted);font-size:12px}
+    .versionEditor{border-top:1px solid var(--line);padding-top:16px;display:grid;gap:10px;min-height:0}
+    .versionEditor label{color:var(--muted);font-size:13px}
+    .versionEditor textarea{height:190px;font-size:14px;font-family:ui-serif,"Noto Serif SC","Songti SC","STSong","SimSun",serif}
+    .editButtons{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    .hint{margin-top:10px;border:1px solid #d6e5fb;background:#f3f8ff;color:#527098;border-radius:11px;padding:10px;font-size:13px;line-height:1.6}
+    .modalShade{display:none;position:fixed;inset:0;background:rgba(33,28,22,.28);z-index:10;align-items:center;justify-content:center}
+    .modalShade.show{display:flex}
+    .modal{width:min(760px,92vw);background:#fffdf9;border:1px solid var(--line);border-radius:20px;box-shadow:0 28px 80px rgba(33,28,22,.22);overflow:hidden}
+    .modalHead,.modalFoot{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+    .modalFoot{border-top:1px solid var(--line);border-bottom:0;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+    .modalBody{padding:18px;display:grid;gap:12px}
+    .modalBody textarea{height:330px;font-size:15px}
+    .fileInput{display:none}
+    .dropOverlay{position:fixed;inset:14px;z-index:100;display:none;align-items:center;justify-content:center;background:rgba(247,243,236,.72);border:2px dashed #8db4ef;border-radius:26px;backdrop-filter:blur(4px);color:#153867;font-size:26px;font-weight:800;pointer-events:none}
+    .dropOverlay.show{display:flex}
+    .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(16px);opacity:0;background:#29231f;color:#fff;padding:10px 16px;border-radius:999px;font-family:ui-sans-serif,system-ui;transition:.2s;pointer-events:none;z-index:120}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    @media(max-width:1200px){
+      body{overflow:auto}
+      .app{height:auto;grid-template-columns:1fr}
+      .sidebar,.main,.right{height:auto}
+      .right{border-left:0;border-top:1px solid var(--line)}
+      .top{grid-template-columns:1fr}
+      .search{width:100%}
+    }
+    .mobileHeader,.mobileTabs{display:none}
+
+    @media(max-width:768px){
+      html,body{height:100%;overflow:hidden}
+      body{font-size:16px;background:#fffdf9}
+      .mobileHeader{
+        display:flex;
+        position:fixed;left:0;right:0;top:0;height:58px;
+        z-index:200;
+        align-items:center;justify-content:space-between;
+        padding:0 16px;
+        background:rgba(255,253,249,.96);
+        border-bottom:1px solid var(--line);
+        backdrop-filter: blur(8px);
+      }
+      .mobileTitle{font-size:18px;font-weight:800;color:#1d2b3e;letter-spacing:.04em}
+      .mobileIcon{
+        width:42px;height:42px;border:0;background:transparent;
+        font-size:34px;line-height:1;box-shadow:none;padding:0;color:#1f1b17
+      }
+      .mobileIcon:hover{box-shadow:none;border:0}
+      .mobileTabs{
+        display:grid;
+        grid-template-columns:1fr 1fr 1fr;
+        position:fixed;left:0;right:0;bottom:0;height:62px;
+        z-index:200;
+        gap:8px;
+        padding:8px 12px calc(8px + env(safe-area-inset-bottom));
+        background:rgba(255,253,249,.96);
+        border-top:1px solid var(--line);
+        backdrop-filter: blur(8px);
+      }
+      .mobileTabs button{
+        border-radius:14px;
+        font-size:15px;
+        padding:8px 6px;
+        min-height:44px;
+      }
+      .mobileTabs button.active{
+        background:var(--blue);
+        color:#fff;
+        border-color:var(--blue);
+      }
+
+      .app{
+        display:block;
+        height:100dvh;
+        padding-top:58px;
+        padding-bottom:62px;
+        overflow:hidden;
+      }
+      .sidebar,.main,.right{display:none !important}
+      body[data-view="editor"] .main,
+      body[data-view="chapters"] .sidebar,
+      body[data-view="versions"] .right{
+        display:flex !important;
+      }
+
+      .main,.sidebar,.right{
+        height:calc(100dvh - 120px);
+        overflow:auto;
+        width:100%;
+        border:0;
+        padding:14px;
+      }
+
+      .sidebar{
+        background:#fffdf9;
+      }
+      .sidebar .brand,.sidebar .bamboo,.sidebar .nav,.sidebar .inkscape{
+        display:none;
+      }
+      .chaptersTitle{
+        margin-top:4px;
+        font-size:18px;
+      }
+      .chapterCard{
+        min-height:86px;
+        padding:16px;
+        border-radius:18px;
+      }
+      .chapterName{font-size:18px}
+      .chapterMeta{font-size:14px}
+
+      .right{
+        background:#fffdf9;
+      }
+      .right h3{
+        font-size:20px;
+        margin-top:4px;
+      }
+      .rightSub{font-size:14px}
+      .versions{
+        max-height:34vh;
+        overflow:auto;
+      }
+      .version{
+        padding:16px;
+        border-radius:18px;
+      }
+      .vName{font-size:18px}
+      .versionEditor textarea{
+        height:220px;
+        font-size:17px;
+        line-height:2;
+      }
+      .editButtons{
+        grid-template-columns:1fr;
+      }
+      .editButtons button,#addVersionBtn{
+        min-height:48px;
+        font-size:16px;
+      }
+
+      .top{
+        display:block;
+        margin-bottom:10px;
+      }
+      .compactTop{
+        display:block;
+      }
+      .search{
+        width:100%;
+        min-height:56px;
+        border-radius:18px;
+        padding:10px 14px;
+      }
+      .search input{
+        font-size:16px;
+      }
+      .shortcut{display:none}
+
+      .toolbar{
+        display:flex;
+        flex-wrap:nowrap;
+        overflow-x:auto;
+        gap:10px;
+        padding:8px 0 12px;
+        margin-bottom:12px;
+        -webkit-overflow-scrolling:touch;
+      }
+      .toolbar button{
+        min-height:46px;
+        font-size:15px;
+        flex:0 0 auto;
+      }
+
+      .statRow{
+        gap:10px;
+        margin-bottom:14px;
+        flex-wrap:nowrap;
+        overflow-x:auto;
+      }
+      .pill{
+        font-size:16px;
+        padding:8px 16px;
+        flex:0 0 auto;
+      }
+
+      .editorWrap{
+        overflow:auto;
+        padding:0 0 20px;
+      }
+      .paragraph{
+        grid-template-columns:34px minmax(0,1fr);
+        margin-bottom:14px;
+      }
+      .paraRail{
+        padding-top:22px;
+        gap:8px;
+      }
+      .paraRail .small{
+        width:30px;
+        min-width:30px;
+        padding:7px 0;
+      }
+      .paraCard{
+        min-width:0;
+        padding:16px;
+        border-radius:18px;
+      }
+      .paraHead{
+        display:flex;
+        flex-direction:column;
+        align-items:flex-start;
+        gap:12px;
+      }
+      .paraTitle{
+        white-space:nowrap;
+        font-size:19px;
+      }
+      .paraTools{
+        width:100%;
+        display:flex;
+        gap:8px;
+        overflow-x:auto;
+        padding-bottom:2px;
+      }
+      .paraTools button{
+        min-height:40px;
+        flex:0 0 auto;
+      }
+      .paraText{
+        font-size:18px;
+        line-height:2;
+        min-height:190px;
+        overflow-wrap:break-word;
+        word-break:break-word;
+      }
+      .addParaCard{
+        margin:8px 0 28px 34px;
+        padding:16px;
+        border-radius:18px;
+      }
+      .addParaCard button{
+        width:100%;
+        min-height:48px;
+      }
+
+      .modal{
+        width:calc(100vw - 24px);
+        max-height:calc(100dvh - 40px);
+        display:flex;
+        flex-direction:column;
+      }
+      .modalBody{
+        overflow:auto;
+      }
+      .modalBody textarea{
+        height:260px;
+        font-size:16px;
+      }
+      .modalFoot{
+        display:grid;
+        grid-template-columns:1fr;
+      }
+      .modalFoot button{
+        min-height:48px;
+      }
+    }
+
+  </style>
+</head>
+<body data-view="editor">
+  <div class="mobileHeader">
+    <button class="mobileIcon" id="mobileCloseBtn" title="关闭提示">×</button>
+    <div class="mobileTitle">段落版本写作器</div>
+    <button class="mobileIcon" id="mobileMoreBtn" title="更多">⋯</button>
+  </div>
+  <div class="mobileTabs">
+    <button class="active" data-view-btn="editor">编辑器</button>
+    <button data-view-btn="chapters">章节</button>
+    <button data-view-btn="versions">版本</button>
+  </div>
+  <div class="dropOverlay" id="dropOverlay">拖入 TXT / Markdown / 源文件 JSON 进行导入</div>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>段落版本写作器</h1>
+        <p>Paragraph Version Writer</p>
+      </div>
+      <div class="bamboo"></div>
+      <div class="nav"><div class="navItem">✎ 编辑器</div></div>
+      <div class="chaptersTitle">
+        <span>章节列表</span>
+        <button class="small" id="newChapterBtn">＋ 新建章节</button>
+      </div>
+      <div class="chapterList" id="chapterList"></div>
+      <div class="inkscape"></div>
+    </aside>
+
+    <main class="main">
+      <div class="top compactTop">
+        <div class="search">⌕ <input id="searchInput" placeholder="搜索段落或内容..." /><span class="shortcut">Ctrl/⌘ + K</span></div>
+      </div>
+
+      <div class="toolbar">
+        <input id="textFileInput" class="fileInput" type="file" accept=".txt,.md,text/plain,text/markdown" />
+        <input id="projectFileInput" class="fileInput" type="file" accept=".json,application/json" />
+        <button id="importTextBtn">⇧ 导入文本</button>
+        <button id="importProjectBtn">↺ 导入源文件</button>
+        <button class="green" id="addParaEndBtn">＋ 末尾新增段落</button>
+        <button id="addParaAfterBtn">＋ 当前下方新增</button>
+        <button id="copyTxtBtn">▤ 复制 TXT</button>
+        <button id="copyMdBtn">M↧ 复制 Markdown</button>
+        <button id="exportProjectBtn">⤓ 导出源文件 JSON</button>
+      </div>
+
+      <div class="statRow">
+        <span class="pill" id="paraStat">0 段</span>
+        <span class="pill green" id="charStat">0 字</span>
+        <span class="pill orange" id="versionStat">0 版本</span>
+      </div>
+
+      <div class="editorWrap" id="editorWrap"></div>
+    </main>
+
+    <aside class="right">
+      <h3>段落版本 <span id="currentParaText" style="font-weight:400;color:var(--muted);font-size:14px"></span></h3>
+      <div class="rightSub">选择段落后，可以管理它的候选版本与展示版。</div>
+      <div class="versions" id="versionList"></div>
+      <div class="versionEditor">
+        <label>版本名称</label>
+        <input id="versionName" placeholder="版本名称" />
+        <label>版本内容</label>
+        <textarea id="versionContent" placeholder="当前版本内容"></textarea>
+        <div class="editButtons">
+          <button class="primary" id="saveVersionBtn">保存修改</button>
+          <button class="green" id="setDisplayBtn">设为展示版</button>
+          <button class="danger" id="deleteVersionBtn">删除版本</button>
+        </div>
+        <button id="addVersionBtn">＋ 新建版本</button>
+        <div class="hint">ⓘ “源文件 JSON”会保存章节、段落和全部版本；下次导入即可继续编辑。此工具默认不自动储存。</div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="modalShade" id="importModal">
+    <div class="modal">
+      <div class="modalHead">
+        <strong>导入文本</strong>
+        <button class="small" id="closeModalBtn">关闭</button>
+      </div>
+      <div class="modalBody">
+        <input id="chapterTitleInput" placeholder="章节标题，例如：第一章 初入江南" />
+        <select id="splitMode">
+          <option value="smart" selected>智能分段：优先空行，其次换行，最后按句群</option>
+          <option value="blank">严格按空行分段</option>
+          <option value="line">每一行作为一段</option>
+          <option value="none">不分段：全部作为一段</option>
+        </select>
+        <textarea id="importText" placeholder="把文本粘贴到这里。智能分段会尽量避免导入后一坨。"></textarea>
+      </div>
+      <div class="modalFoot">
+        <button id="importAppendBtn">追加为新章节</button>
+        <button id="importCurrentBtn">添加到本章最后面</button>
+        <button class="primary" id="importReplaceBtn">清空并导入</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">完成</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const uid = () => Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4);
+  const today = () => new Date().toISOString().slice(0,10);
+  const countText = s => (s || "").replace(/\s/g,"").length;
+  const esc = s => (s || "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const saveFile = (name, text, type="text/plain;charset=utf-8") => {
+    const blob = new Blob([text], {type});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 800);
+  };
+  const toast = msg => {
+    const t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(() => t.classList.remove("show"), 1700);
+  };
+  async function copyToClipboard(text){
+    try{ await navigator.clipboard.writeText(text); toast("已复制到剪切板"); }
+    catch(e){
+      const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta);
+      ta.select(); document.execCommand("copy"); ta.remove(); toast("已复制到剪切板");
+    }
+  }
+
+  let app = { appName:"paragraph-version-writer", version:"1.3", chapters:[], chapterId:null, paragraphId:null, versionId:null };
+
+  function splitParas(text, mode="smart"){
+    text = (text || "").replace(/\r\n/g,"\n").replace(/\u3000/g," ").trim();
+    if(!text) return [];
+    const clean = arr => arr.map(x=>x.trim()).filter(Boolean);
+    if(mode === "none") return [text];
+    if(mode === "blank") return clean(text.split(/\n\s*\n+/));
+    if(mode === "line") return clean(text.split(/\n+/));
+    const blank = clean(text.split(/\n\s*\n+/));
+    if(blank.length > 1) return blank;
+    const lines = clean(text.split(/\n+/));
+    if(lines.length > 1) return lines;
+    const sentences = clean(text.match(/[^。！？!?；;]+[。！？!?；;]?/g) || [text]);
+    if(sentences.length <= 3) return [text];
+    const groups = []; let buf = "";
+    sentences.forEach((s, i) => {
+      buf += s;
+      if((i + 1) % 3 === 0 || countText(buf) >= 120){ groups.push(buf.trim()); buf = ""; }
+    });
+    if(buf.trim()) groups.push(buf.trim());
+    return groups.length ? groups : [text];
+  }
+
+  function makeVersion(name, content, display=false){ return { id:uid(), name, content, display, date:today() }; }
+  function makeParagraph(content, i){ const v = makeVersion("原始版", content, true); return { id:uid(), order:i, displayVersionId:v.id, versions:[v] }; }
+  function makeChapter(title, text, splitMode="smart"){
+    const paras = splitParas(text, splitMode);
+    return { id:uid(), title:title || "未命名章节", paragraphs:(paras.length ? paras : [""]).map(makeParagraph) };
+  }
+  function currentChapter(){ return app.chapters.find(x => x.id === app.chapterId) || null; }
+  function currentParagraph(){ const c = currentChapter(); return c ? c.paragraphs.find(x => x.id === app.paragraphId) || null : null; }
+  function currentVersion(){
+    const p = currentParagraph();
+    return p ? p.versions.find(x => x.id === app.versionId) || p.versions.find(x => x.id === p.displayVersionId) || p.versions[0] : null;
+  }
+  function displayVersion(p){ return p.versions.find(x => x.id === p.displayVersionId) || p.versions[0]; }
+  function ensure(){
+    if(app.chapters.length) return;
+    const sample = `江南的雨，总是来得悄无声息。烟雨蒙蒙中，青石板路被洗得发亮，仿佛一面沉默的镜子，映照着来来往往的脚步。\n\n我提着行囊，踏上这座陌生的城市。没有目的地，只想寻一处客栈落脚，等雨停了，再继续赶路。`;
+    const c = makeChapter("第一章 初入江南", sample, "smart");
+    c.paragraphs[0].versions.push(makeVersion("氛围加强版", "江南的雨，总带着几分旧梦。烟雨蒙蒙里，青石板路被洗得发亮，仿佛一面沉默的镜子，照见来者，也藏住归人。"));
+    c.paragraphs[0].versions.push(makeVersion("节奏压缩版", "江南雨落得无声，青石板被洗得发亮。我提着行囊，走进这座陌生的城市。"));
+    app.chapters = [c]; app.chapterId = c.id; app.paragraphId = c.paragraphs[0].id; app.versionId = c.paragraphs[0].displayVersionId;
+  }
+
+  function render(){ ensure(); renderChapters(); renderParagraphs(); renderVersions(); renderStats(); }
+  function renderChapters(){
+    const box = $("chapterList");
+    box.innerHTML = app.chapters.map(c => {
+      const chars = c.paragraphs.reduce((s,p) => s + countText(displayVersion(p)?.content), 0);
+      return `<div class="chapterCard ${c.id === app.chapterId ? "active" : ""}" data-id="${c.id}">
+        <div class="chapterName">${esc(c.title)}</div><div class="chapterMeta">${chars} 字 · ${c.paragraphs.length} 段</div></div>`;
+    }).join("");
+    box.querySelectorAll(".chapterCard").forEach(card => {
+      card.onclick = () => {
+        app.chapterId = card.dataset.id;
+        const c = currentChapter();
+        app.paragraphId = c.paragraphs[0]?.id || null;
+        app.versionId = c.paragraphs[0]?.displayVersionId || null;
+        render();
+      };
+    });
+  }
+  function renderStats(){
+    const c = currentChapter(); if(!c) return;
+    $("paraStat").textContent = c.paragraphs.length + " 段";
+    $("charStat").textContent = c.paragraphs.reduce((s,p) => s + countText(displayVersion(p)?.content), 0) + " 字";
+    $("versionStat").textContent = c.paragraphs.reduce((s,p) => s + Math.max(0, p.versions.length - 1), 0) + " 版本";
+  }
+  function renderParagraphs(){
+    const c = currentChapter(); const box = $("editorWrap"); if(!c){ box.innerHTML = ""; return; }
+    const key = $("searchInput").value.trim();
+    let paras = c.paragraphs.slice().sort((a,b)=>a.order-b.order);
+    if(key) paras = paras.filter(p => (displayVersion(p)?.content || "").includes(key));
+    box.innerHTML = paras.map((p,idx) => {
+      const v = displayVersion(p) || {content:""};
+      return `<div class="paragraph ${p.id === app.paragraphId ? "active" : ""}" data-id="${p.id}">
+        <div class="paraRail"><div class="handle">⋮⋮</div><button class="small up">⌃</button><button class="small down">⌄</button></div>
+        <div class="paraCard">
+          <div class="paraHead">
+            <div class="paraTitle">段落${String(idx+1).padStart(3,"0")} <span class="tag">展示版</span></div>
+            <div class="paraTools">
+              <button class="small copy">▣</button><button class="small addAfter">＋ 下方段落</button>
+              <button class="small addv">＋ 新版本</button><button class="small danger del">⌫</button>
+            </div>
+          </div>
+          <textarea class="paraText" data-id="${p.id}">${esc(v.content)}</textarea>
+        </div>
+      </div>`;
+    }).join("") + `<div class="addParaCard"><button class="green" id="addParaEndBtn2">＋ 在末尾新增段落，继续写</button></div>`;
+    box.querySelectorAll(".paragraph").forEach(card => {
+      card.onclick = e => { if(e.target.tagName === "TEXTAREA" || e.target.tagName === "BUTTON") return; selectParagraph(card.dataset.id); };
+    });
+    box.querySelectorAll(".paraText").forEach(ta => {
+      ta.onfocus = () => selectParagraph(ta.dataset.id, false);
+      ta.oninput = () => {
+        const p = currentChapter().paragraphs.find(x => x.id === ta.dataset.id);
+        const v = displayVersion(p); v.content = ta.value; renderStats(); updateVersionEditorIfSelected(p.id, v.id);
+      };
+    });
+    box.querySelectorAll(".up").forEach(btn => btn.onclick = e => { e.stopPropagation(); movePara(btn.closest(".paragraph").dataset.id, -1); });
+    box.querySelectorAll(".down").forEach(btn => btn.onclick = e => { e.stopPropagation(); movePara(btn.closest(".paragraph").dataset.id, 1); });
+    box.querySelectorAll(".copy").forEach(btn => btn.onclick = async e => { e.stopPropagation(); const p = getPara(btn); await copyToClipboard(displayVersion(p).content); });
+    box.querySelectorAll(".addv").forEach(btn => btn.onclick = e => { e.stopPropagation(); addVersion(getPara(btn).id); });
+    box.querySelectorAll(".addAfter").forEach(btn => btn.onclick = e => { e.stopPropagation(); addParagraphAfter(getPara(btn).id); });
+    box.querySelectorAll(".del").forEach(btn => btn.onclick = e => { e.stopPropagation(); delPara(getPara(btn).id); });
+    $("addParaEndBtn2").onclick = () => addParagraphEnd();
+  }
+  function getPara(btn){ return currentChapter().paragraphs.find(x => x.id === btn.closest(".paragraph").dataset.id); }
+  function renderVersions(){
+    const p = currentParagraph(), box = $("versionList");
+    if(!p){ box.innerHTML = ""; $("currentParaText").textContent = ""; $("versionName").value = ""; $("versionContent").value = ""; return; }
+    const c = currentChapter();
+    const idx = c.paragraphs.slice().sort((a,b)=>a.order-b.order).findIndex(x => x.id === p.id) + 1;
+    $("currentParaText").textContent = `（当前：段落${String(idx).padStart(3,"0")}）`;
+    box.innerHTML = p.versions.map(v => `<div class="version ${v.id === app.versionId ? "active" : ""}" data-id="${v.id}">
+      <div class="versionTop"><span class="vName">${esc(v.name)}</span>${v.id === p.displayVersionId ? `<span class="tag">展示版</span>` : `<span>⋮</span>`}</div>
+      <div class="vMeta"><span>${v.date}</span><span>${countText(v.content)} 字</span></div>
+    </div>`).join("");
+    box.querySelectorAll(".version").forEach(card => { card.onclick = () => { app.versionId = card.dataset.id; renderVersions(); }; });
+    const v = currentVersion(); if(v){ $("versionName").value = v.name; $("versionContent").value = v.content; }
+  }
+  function updateVersionEditorIfSelected(pid, vid){ if(app.paragraphId === pid && app.versionId === vid){ $("versionContent").value = currentVersion().content; renderVersions(); } }
+  function selectParagraph(id, rerender=true){ const p = currentChapter().paragraphs.find(x => x.id === id); if(!p) return; app.paragraphId = id; app.versionId = p.displayVersionId; rerender ? render() : renderVersions(); }
+  function normalizeOrders(c){ c.paragraphs.sort((a,b)=>a.order-b.order).forEach((p,i)=>p.order=i); }
+  function movePara(id, dir){
+    const c = currentChapter(), arr = c.paragraphs.sort((a,b)=>a.order-b.order);
+    const i = arr.findIndex(x=>x.id===id), j = i + dir; if(i < 0 || j < 0 || j >= arr.length) return;
+    [arr[i].order, arr[j].order] = [arr[j].order, arr[i].order]; c.paragraphs = arr; render();
+  }
+  function addParagraphEnd(content=""){
+    const c = currentChapter(); if(!c) return;
+    const p = makeParagraph(content, c.paragraphs.length); c.paragraphs.push(p);
+    app.paragraphId = p.id; app.versionId = p.displayVersionId; render();
+    setTimeout(() => document.querySelector(`textarea[data-id="${p.id}"]`)?.focus(), 50);
+  }
+  function addParagraphAfter(id, content=""){
+    const c = currentChapter(), arr = c.paragraphs.sort((a,b)=>a.order-b.order);
+    const idx = arr.findIndex(x => x.id === id);
+    const p = makeParagraph(content, idx + 1); arr.splice(idx + 1, 0, p); c.paragraphs = arr; normalizeOrders(c);
+    app.paragraphId = p.id; app.versionId = p.displayVersionId; render();
+    setTimeout(() => document.querySelector(`textarea[data-id="${p.id}"]`)?.focus(), 50);
+  }
+  function appendParasToCurrentChapter(text, mode="smart"){
+    const c = currentChapter(); if(!c) return;
+    const paras = splitParas(text, mode); if(!paras.length) return toast("没有可导入内容");
+    paras.forEach(content => c.paragraphs.push(makeParagraph(content, c.paragraphs.length)));
+    normalizeOrders(c); const p = c.paragraphs[c.paragraphs.length - paras.length];
+    app.paragraphId = p.id; app.versionId = p.displayVersionId; render(); toast(`已添加 ${paras.length} 段到本章末尾`);
+  }
+  function addVersion(pid=null){
+    const p = pid ? currentChapter().paragraphs.find(x=>x.id===pid) : currentParagraph(); if(!p) return;
+    const base = displayVersion(p); const v = makeVersion("新版本", base?.content || "", false);
+    p.versions.push(v); app.paragraphId = p.id; app.versionId = v.id; render(); toast("已新建版本");
+  }
+  function delPara(id){
+    if(!confirm("删除这个段落及其所有版本？")) return;
+    const c = currentChapter(); c.paragraphs = c.paragraphs.filter(x => x.id !== id); normalizeOrders(c);
+    app.paragraphId = c.paragraphs[0]?.id || null; app.versionId = c.paragraphs[0]?.displayVersionId || null;
+    if(c.paragraphs.length === 0) addParagraphEnd(); render();
+  }
+  function syncVersionFromEditor(){
+    const v = currentVersion();
+    if(!v) return false;
+    v.name = $("versionName").value.trim() || "未命名版本";
+    v.content = $("versionContent").value;
+    return true;
+  }
+  function saveVersion(){ if(!syncVersionFromEditor()) return; render(); toast("已保存版本修改"); }
+  function setDisplay(){
+    syncVersionFromEditor();
+    const p = currentParagraph(), v = currentVersion(); if(!p || !v) return;
+    p.displayVersionId = v.id; p.versions.forEach(x => x.display = x.id === v.id); render(); toast("已保存并设为展示版");
+  }
+  function deleteVersion(){
+    const p = currentParagraph(), v = currentVersion(); if(!p || !v) return;
+    if(p.versions.length <= 1) return toast("至少保留一个版本");
+    if(!confirm("删除此版本？")) return;
+    p.versions = p.versions.filter(x => x.id !== v.id);
+    if(p.displayVersionId === v.id) p.displayVersionId = p.versions[0].id;
+    app.versionId = p.displayVersionId; render();
+  }
+  function exportCurrentChapter(markdown=false){
+    const c = currentChapter(); if(!c) return "";
+    const body = c.paragraphs.slice().sort((a,b)=>a.order-b.order).map(p => displayVersion(p)?.content || "").filter(Boolean).join("\n\n");
+    return markdown ? `# ${c.title}\n\n${body}` : body;
+  }
+  function importText(text, title, replace=false, splitMode="smart"){
+    const c = makeChapter(title || "导入章节", text, splitMode);
+    if(replace) app.chapters = [];
+    app.chapters.push(c); app.chapterId = c.id; app.paragraphId = c.paragraphs[0]?.id; app.versionId = c.paragraphs[0]?.displayVersionId;
+    render(); toast(`已导入 ${c.paragraphs.length} 段`);
+  }
+  function importJson(text){
+    const data = JSON.parse(text);
+    if(!data.chapters || !Array.isArray(data.chapters)) throw new Error("不是段落版本写作器源文件 JSON");
+    app = { appName:data.appName || "paragraph-version-writer", version:data.version || "1.3", chapters:data.chapters, chapterId:data.chapterId || data.chapters[0]?.id || null, paragraphId:data.paragraphId || null, versionId:data.versionId || null };
+    const c = currentChapter() || app.chapters[0]; if(c) app.chapterId = c.id;
+    if(!app.paragraphId) app.paragraphId = c?.paragraphs?.[0]?.id || null;
+    const p = currentParagraph() || c?.paragraphs?.[0]; if(p) app.paragraphId = p.id;
+    if(!app.versionId) app.versionId = p?.displayVersionId || p?.versions?.[0]?.id || null; render();
+  }
+  function openImportModal(text="", title=""){ $("chapterTitleInput").value = title || ""; $("importText").value = text || ""; $("importModal").classList.add("show"); }
+
+  $("importTextBtn").onclick = () => openImportModal();
+  $("closeModalBtn").onclick = () => $("importModal").classList.remove("show");
+  $("importAppendBtn").onclick = () => { const text = $("importText").value; if(!text.trim()) return toast("请先粘贴文本"); importText(text, $("chapterTitleInput").value.trim() || "导入章节", false, $("splitMode").value); $("importModal").classList.remove("show"); };
+  $("importCurrentBtn").onclick = () => { const text = $("importText").value; if(!text.trim()) return toast("请先粘贴文本"); appendParasToCurrentChapter(text, $("splitMode").value); $("importModal").classList.remove("show"); };
+  $("importReplaceBtn").onclick = () => { const text = $("importText").value; if(!text.trim()) return toast("请先粘贴文本"); if(!confirm("会清空当前内容，确定继续？")) return; importText(text, $("chapterTitleInput").value.trim() || "导入章节", true, $("splitMode").value); $("importModal").classList.remove("show"); };
+
+  $("newChapterBtn").onclick = () => {
+    let title = "新章节 " + (app.chapters.length + 1);
+    try {
+      const inputTitle = prompt("章节标题：", title);
+      if(inputTitle === null) return;
+      title = inputTitle.trim() || title;
+    } catch(e) {}
+    const c = makeChapter(title, "", "none"); app.chapters.push(c); app.chapterId = c.id; app.paragraphId = c.paragraphs[0].id; app.versionId = c.paragraphs[0].displayVersionId; render();
+  };
+  $("textFileInput").onchange = async e => {
+    const f = e.target.files[0]; if(!f) return;
+    openImportModal(await f.text(), f.name.replace(/\.(txt|md)$/i,"")); e.target.value = "";
+  };
+  $("projectFileInput").onchange = async e => {
+    const f = e.target.files[0]; if(!f) return;
+    try{ importJson(await f.text()); toast("源文件已导入"); }catch(err){ alert("导入失败：" + err.message); }
+    e.target.value = "";
+  };
+  async function handleDroppedFile(file){
+    const text = await file.text(), name = file.name || "拖入文件";
+    if(name.toLowerCase().endsWith(".json")){
+      try{ importJson(text); toast("源文件已拖入导入"); }catch(err){ alert("导入失败：" + err.message); }
+    }else{
+      openImportModal(text, name.replace(/\.(txt|md)$/i,""));
+      toast("文本已载入导入框，请选择导入方式");
+    }
+  }
+  let dragDepth = 0;
+  window.addEventListener("dragenter", e => { e.preventDefault(); dragDepth++; $("dropOverlay").classList.add("show"); });
+  window.addEventListener("dragover", e => e.preventDefault());
+  window.addEventListener("dragleave", e => { dragDepth--; if(dragDepth <= 0){ dragDepth = 0; $("dropOverlay").classList.remove("show"); } });
+  window.addEventListener("drop", async e => { e.preventDefault(); dragDepth = 0; $("dropOverlay").classList.remove("show"); const file = e.dataTransfer.files?.[0]; if(file) await handleDroppedFile(file); });
+  document.addEventListener("keydown", e => {
+    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==="o"){ e.preventDefault(); $("projectFileInput").click(); }
+    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==="s"){ e.preventDefault(); exportProject(); }
+    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==="k"){ e.preventDefault(); $("searchInput").focus(); }
+    if((e.ctrlKey || e.metaKey) && e.key === "Enter"){ e.preventDefault(); addParagraphAfter(app.paragraphId); }
+  });
+  function exportProject(){ saveFile("段落版本写作器源文件.json", JSON.stringify({...app, exportedAt:new Date().toISOString()}, null, 2), "application/json;charset=utf-8"); }
+
+  $("importProjectBtn").onclick = () => $("projectFileInput").click();
+  $("exportProjectBtn").onclick = exportProject;
+  $("copyTxtBtn").onclick = () => copyToClipboard(exportCurrentChapter(false));
+  $("copyMdBtn").onclick = () => copyToClipboard(exportCurrentChapter(true));
+  $("saveVersionBtn").onclick = saveVersion;
+  $("setDisplayBtn").onclick = setDisplay;
+  $("deleteVersionBtn").onclick = deleteVersion;
+  $("addVersionBtn").onclick = () => addVersion();
+  $("addParaEndBtn").onclick = () => addParagraphEnd();
+  $("addParaAfterBtn").onclick = () => app.paragraphId ? addParagraphAfter(app.paragraphId) : addParagraphEnd();
+  $("searchInput").oninput = () => renderParagraphs();
+  window.addEventListener("beforeunload", e => { e.preventDefault(); e.returnValue = ""; });
+
+  function setMobileView(view){
+    document.body.setAttribute("data-view", view);
+    document.querySelectorAll("[data-view-btn]").forEach(btn=>{
+      btn.classList.toggle("active", btn.dataset.viewBtn === view);
+    });
+  }
+  document.querySelectorAll("[data-view-btn]").forEach(btn=>{
+    btn.onclick = () => setMobileView(btn.dataset.viewBtn);
+  });
+  $("mobileCloseBtn").onclick = () => toast("网页工具不会自动关闭，请使用浏览器返回或关闭页面");
+  $("mobileMoreBtn").onclick = () => toast("可拖入 TXT / JSON，或用 Ctrl/⌘+S 导出源文件");
+  setInterval(()=>{ syncVersionFromEditor(); }, 30000);
+
+  render();
+})();
+</script>
+</body>
+</html>
