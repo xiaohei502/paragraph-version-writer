@@ -774,7 +774,11 @@
     if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==="k"){ e.preventDefault(); $("searchInput").focus(); }
     if((e.ctrlKey || e.metaKey) && e.key === "Enter"){ e.preventDefault(); addParagraphAfter(app.paragraphId); }
   });
-  function exportProject(){ saveFile("段落版本写作器源文件.json", JSON.stringify({...app, exportedAt:new Date().toISOString()}, null, 2), "application/json;charset=utf-8"); }
+  function exportProject(){
+    // Include the active draft without waiting for the periodic editor sync.
+    syncVersionFromEditor();
+    saveFile("段落版本写作器源文件.json", JSON.stringify({...app, exportedAt:new Date().toISOString()}, null, 2), "application/json;charset=utf-8");
+  }
 
   $("importProjectBtn").onclick = () => $("projectFileInput").click();
   $("exportProjectBtn").onclick = exportProject;
@@ -807,3 +811,4 @@
 </script>
 </body>
 </html>
+
