@@ -785,6 +785,9 @@
   $("copyTxtBtn").onclick = () => copyToClipboard(exportCurrentChapter(false));
   $("copyMdBtn").onclick = () => copyToClipboard(exportCurrentChapter(true));
   $("saveVersionBtn").onclick = saveVersion;
+  // Keep drafts in memory before navigation or rerendering replaces the editor.
+  $("versionName").oninput = syncVersionFromEditor;
+  $("versionContent").oninput = syncVersionFromEditor;
   $("setDisplayBtn").onclick = setDisplay;
   $("deleteVersionBtn").onclick = deleteVersion;
   $("addVersionBtn").onclick = () => addVersion();
