@@ -649,7 +649,16 @@
     const v = currentVersion(); if(v){ $("versionName").value = v.name; $("versionContent").value = v.content; }
   }
   function updateVersionEditorIfSelected(pid, vid){ if(app.paragraphId === pid && app.versionId === vid){ $("versionContent").value = currentVersion().content; renderVersions(); } }
-  function selectParagraph(id, rerender=true){ const p = currentChapter().paragraphs.find(x => x.id === id); if(!p) return; app.paragraphId = id; app.versionId = p.displayVersionId; rerender ? render() : renderVersions(); }
+  function selectParagraph(id, rerender=true){
+    const p = currentChapter().paragraphs.find(x => x.id === id); if(!p) return;
+    app.paragraphId = id; app.versionId = p.displayVersionId;
+    if(rerender){ render(); return; }
+    // Focus must update selection styling without replacing the active textarea.
+    $("editorWrap").querySelectorAll(".paragraph").forEach(card => {
+      card.classList.toggle("active", card.dataset.id === id);
+    });
+    renderVersions();
+  }
   function normalizeOrders(c){ c.paragraphs.sort((a,b)=>a.order-b.order).forEach((p,i)=>p.order=i); }
   function movePara(id, dir){
     const c = currentChapter(), arr = c.paragraphs.sort((a,b)=>a.order-b.order);

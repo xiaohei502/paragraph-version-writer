@@ -54,3 +54,20 @@ test('side-panel display edit survives continuing in central editor', async () =
     assert.equal(await page.locator('.paraText').first().inputValue(), '侧栏的新正文，继续写');
   } finally { await browser.close(); }
 });
+
+test('focusing another paragraph moves highlight without replacing its textarea', async () => {
+  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', headless: true, args: ['--no-sandbox'] });
+  try {
+    const page = await browser.newPage();
+    await page.goto(pathToFileURL(path.join(__dirname, 'index.html')).href);
+    const second = page.locator('.paraText').nth(1);
+    await second.evaluate(el => { window.originalTextarea = el; el.setSelectionRange(2, 2); el.focus(); });
+    assert.equal(await second.evaluate(el => el === window.originalTextarea && document.activeElement === el && el.selectionStart === 2), true);
+    assert.equal(await page.locator('.paragraph.active').count(), 1);
+    assert.equal(await page.locator('.paragraph.active').getAttribute('data-id'), await second.getAttribute('data-id'));
+    await page.keyboard.insertText('新');
+    assert.equal(await page.locator('#versionContent').inputValue(), await second.inputValue());
+    await page.locator('.paraText').first().focus();
+    assert.equal(await page.locator('.paragraph.active').getAttribute('data-id'), await page.locator('.paraText').first().getAttribute('data-id'));
+  } finally { await browser.close(); }
+});
