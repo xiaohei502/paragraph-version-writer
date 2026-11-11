@@ -48,3 +48,8 @@ Run `node --test paragraph-selection.test.cjs import-unit.test.cjs export-unit.t
 Focusing a central textarea previously changed the selection and side panel but left the old card highlighted. Two of three focused unit cases failed before the fix. All 28 combined unit tests now pass, including repeated focus changes, a filtered list and an invalid selection.
 
 The focus path toggles card classes in place rather than rebuilding the central editor. Unit stubs reject rebuilding; a browser scenario additionally checks textarea identity, focus, caret offset and continued typing. That browser scenario has not passed execution: Chromium launch is blocked by the environment's socket permissions, so caret behavior remains unverified in-browser.
+
+## Search result paragraph numbers
+
+Run `node --test search-numbering.test.cjs paragraph-selection.test.cjs import-unit.test.cjs export-unit.test.cjs editor-sync.test.cjs editor-mirror.test.cjs`.
+Search results previously restarted paragraph labels at 001, unlike the side panel's original chapter position. Two of three new tests failed before the fix. Rendering now captures ordinal numbers from the complete sorted chapter before filtering. All 31 unit tests pass, including multiple matches, repeated/cleared searches, no matches and changed paragraph order. Tests execute the actual renderer with DOM stubs and inspect generated labels; this is not browser end-to-end verification.
