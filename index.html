@@ -599,14 +599,15 @@
     const c = currentChapter(); const box = $("editorWrap"); if(!c){ box.innerHTML = ""; return; }
     const key = $("searchInput").value.trim();
     let paras = c.paragraphs.slice().sort((a,b)=>a.order-b.order);
+    const paragraphNumbers = new Map(paras.map((p, i) => [p.id, i + 1]));
     if(key) paras = paras.filter(p => (displayVersion(p)?.content || "").includes(key));
-    box.innerHTML = paras.map((p,idx) => {
+    box.innerHTML = paras.map(p => {
       const v = displayVersion(p) || {content:""};
       return `<div class="paragraph ${p.id === app.paragraphId ? "active" : ""}" data-id="${p.id}">
         <div class="paraRail"><div class="handle">⋮⋮</div><button class="small up">⌃</button><button class="small down">⌄</button></div>
         <div class="paraCard">
           <div class="paraHead">
-            <div class="paraTitle">段落${String(idx+1).padStart(3,"0")} <span class="tag">展示版</span></div>
+            <div class="paraTitle">段落${String(paragraphNumbers.get(p.id)).padStart(3,"0")} <span class="tag">展示版</span></div>
             <div class="paraTools">
               <button class="small copy">▣</button><button class="small addAfter">＋ 下方段落</button>
               <button class="small addv">＋ 新版本</button><button class="small danger del">⌫</button>
