@@ -41,3 +41,10 @@ The import tests use disposable projects and execute the real import and validat
 Import validates every chapter, paragraph and version before replacing current state. Required collections must be nonempty; titles, names and content must be strings; order must be finite; IDs must be unique safe identifiers; dates must use YYYY-MM-DD; displayed versions must exist. Stale editor selection IDs fall back within the selected chapter/paragraph. Invalid or incompatible files are rejected rather than partially loaded. Export-shaped multi-version Unicode content and empty version text are retained.
 
 A valid project requires replacement confirmation, warning to export a backup first. Cancel leaves the current project intact and neither file-picker nor drop handlers display a success toast. This does not add automatic backup or reload persistence. Browser interaction for import has not been verified; Chromium remains unavailable in this environment due to denied socket creation. Unit coverage does not substitute for browser QA.
+
+## Active paragraph highlight
+
+Run `node --test paragraph-selection.test.cjs import-unit.test.cjs export-unit.test.cjs editor-sync.test.cjs editor-mirror.test.cjs`.
+Focusing a central textarea previously changed the selection and side panel but left the old card highlighted. Two of three focused unit cases failed before the fix. All 28 combined unit tests now pass, including repeated focus changes, a filtered list and an invalid selection.
+
+The focus path toggles card classes in place rather than rebuilding the central editor. Unit stubs reject rebuilding; a browser scenario additionally checks textarea identity, focus, caret offset and continued typing. That browser scenario has not passed execution: Chromium launch is blocked by the environment's socket permissions, so caret behavior remains unverified in-browser.
