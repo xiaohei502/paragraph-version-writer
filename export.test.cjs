@@ -37,3 +37,20 @@ for (const trigger of ['button', 'Control+s', 'Meta+s']) {
     } finally { await browser.close(); }
   });
 }
+
+test('side-panel display edit survives continuing in central editor', async () => {
+  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', headless: true, args: ['--no-sandbox'] });
+  try {
+    const page = await browser.newPage();
+    await page.goto(pathToFileURL(path.join(__dirname, 'index.html')).href);
+    await page.locator('#versionContent').fill('侧栏的新正文');
+    assert.equal(await page.locator('.paraText').first().inputValue(), '侧栏的新正文');
+    await page.locator('.paraText').first().focus();
+    await page.keyboard.press('End');
+    await page.keyboard.insertText('，继续写');
+    assert.equal(await page.locator('#versionContent').inputValue(), '侧栏的新正文，继续写');
+    await page.locator('#versionList .version').nth(1).click();
+    await page.locator('#versionContent').fill('另一个草稿');
+    assert.equal(await page.locator('.paraText').first().inputValue(), '侧栏的新正文，继续写');
+  } finally { await browser.close(); }
+});
