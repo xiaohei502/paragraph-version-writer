@@ -730,14 +730,43 @@
     app.chapters.push(c); app.chapterId = c.id; app.paragraphId = c.paragraphs[0]?.id; app.versionId = c.paragraphs[0]?.displayVersionId;
     render(); toast(`已导入 ${c.paragraphs.length} 段`);
   }
+  function validateProject(data){
+    const fail = () => { throw new Error("源文件结构无效，请检查章节、段落和版本数据"); };
+    const object = x => x !== null && typeof x === "object" && !Array.isArray(x);
+    const list = x => Array.isArray(x) && x.length > 0;
+    const ids = new Set();
+    const checkId = id => {
+      if(typeof id !== "string" || !/^[A-Za-z0-9_-]+$/.test(id) || ids.has(id)) fail();
+      ids.add(id);
+    };
+    if(!object(data) || !list(data.chapters)) fail();
+    for(const c of data.chapters){
+      if(!object(c) || typeof c.title !== "string" || !list(c.paragraphs)) fail();
+      checkId(c.id);
+      for(const p of c.paragraphs){
+        if(!object(p) || !Number.isFinite(p.order) || !list(p.versions)) fail();
+        checkId(p.id);
+        for(const v of p.versions){
+          if(!object(v) || typeof v.name !== "string" || typeof v.content !== "string" ||
+             typeof v.date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v.date)) fail();
+          checkId(v.id);
+        }
+        if(!p.versions.some(v => v.id === p.displayVersionId)) fail();
+      }
+    }
+    const c = data.chapters.find(c => c.id === data.chapterId) || data.chapters[0];
+    const p = c.paragraphs.find(p => p.id === data.paragraphId) || c.paragraphs[0];
+    const v = p.versions.find(v => v.id === data.versionId) || p.versions.find(v => v.id === p.displayVersionId);
+    return { appName:"paragraph-version-writer", version:"1.3", chapters:data.chapters,
+      chapterId:c.id, paragraphId:p.id, versionId:v.id };
+  }
   function importJson(text){
-    const data = JSON.parse(text);
-    if(!data.chapters || !Array.isArray(data.chapters)) throw new Error("不是段落版本写作器源文件 JSON");
-    app = { appName:data.appName || "paragraph-version-writer", version:data.version || "1.3", chapters:data.chapters, chapterId:data.chapterId || data.chapters[0]?.id || null, paragraphId:data.paragraphId || null, versionId:data.versionId || null };
-    const c = currentChapter() || app.chapters[0]; if(c) app.chapterId = c.id;
-    if(!app.paragraphId) app.paragraphId = c?.paragraphs?.[0]?.id || null;
-    const p = currentParagraph() || c?.paragraphs?.[0]; if(p) app.paragraphId = p.id;
-    if(!app.versionId) app.versionId = p?.displayVersionId || p?.versions?.[0]?.id || null; render();
+    // Parse and validate every nested record before touching the current project.
+    const candidate = validateProject(JSON.parse(text));
+    if(!confirm("导入源文件会替换当前全部内容。请先导出备份，确定继续？")) return false;
+    app = candidate;
+    render();
+    return true;
   }
   function openImportModal(text="", title=""){ $("chapterTitleInput").value = title || ""; $("importText").value = text || ""; $("importModal").classList.add("show"); }
 
@@ -762,13 +791,13 @@
   };
   $("projectFileInput").onchange = async e => {
     const f = e.target.files[0]; if(!f) return;
-    try{ importJson(await f.text()); toast("源文件已导入"); }catch(err){ alert("导入失败：" + err.message); }
+    try{ if(importJson(await f.text())) toast("源文件已导入"); }catch(err){ alert("导入失败：" + err.message); }
     e.target.value = "";
   };
   async function handleDroppedFile(file){
     const text = await file.text(), name = file.name || "拖入文件";
     if(name.toLowerCase().endsWith(".json")){
-      try{ importJson(text); toast("源文件已拖入导入"); }catch(err){ alert("导入失败：" + err.message); }
+      try{ if(importJson(text)) toast("源文件已拖入导入"); }catch(err){ alert("导入失败：" + err.message); }
     }else{
       openImportModal(text, name.replace(/\.(txt|md)$/i,""));
       toast("文本已载入导入框，请选择导入方式");
