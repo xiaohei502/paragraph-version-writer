@@ -694,6 +694,17 @@
     v.content = $("versionContent").value;
     return true;
   }
+  function syncVersionEditorInput(){
+    if(!syncVersionFromEditor()) return;
+    const p = currentParagraph(), v = currentVersion();
+    if(p && displayVersion(p)?.id === v?.id){
+      // Mirror the displayed version without rebuilding either editor.
+      document.querySelectorAll(".paraText").forEach(ta => {
+        if(ta.dataset.id === p.id && ta.value !== v.content) ta.value = v.content;
+      });
+    }
+    renderStats();
+  }
   function saveVersion(){ if(!syncVersionFromEditor()) return; render(); toast("已保存版本修改"); }
   function setDisplay(){
     syncVersionFromEditor();
@@ -786,8 +797,8 @@
   $("copyMdBtn").onclick = () => copyToClipboard(exportCurrentChapter(true));
   $("saveVersionBtn").onclick = saveVersion;
   // Keep drafts in memory before navigation or rerendering replaces the editor.
-  $("versionName").oninput = syncVersionFromEditor;
-  $("versionContent").oninput = syncVersionFromEditor;
+  $("versionName").oninput = syncVersionEditorInput;
+  $("versionContent").oninput = syncVersionEditorInput;
   $("setDisplayBtn").onclick = setDisplay;
   $("deleteVersionBtn").onclick = deleteVersion;
   $("addVersionBtn").onclick = () => addVersion();
